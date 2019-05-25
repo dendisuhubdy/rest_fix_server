@@ -1,113 +1,115 @@
-#include <pistache/endpoint.h>
+
+#include <algorithm>
+
+#include <pistache/http.h>
 #include <pistache/router.h>
+#include <pistache/endpoint.h>
 
-#include <memory>
-#include <csignal>
-
+using namespace std;
 using namespace Pistache;
-using namespace Pistache::Http;
-using namespace Pistache::Rest;
 
-namespace Application {
+void printCookies(const Http::Request& req) {
+    auto cookies = req.cookies();
+    std::cout << "Cookies: [" << std::endl;
+    const std::string indent(4, ' ');
+    for (const auto& c: cookies) {
+        std::cout << indent << c.name << " = " << c.value << std::endl;
+    }
+    std::cout << "]" << std::endl;
+}
 
+namespace Generic {
 
-  class RestApplication {
-    public:
-    RestApplication (Pistache::Address addr): addr_(addr), endpoint_(Pistache::Http::Endpoint(addr)) {
+	void handleReady(const Rest::Request&, Http::ResponseWriter response) {
+		response.send(Http::Code::Ok, "1");
+	}
 
-      auto opts = Pistache::Http::Endpoint::options()
-        .threads(4)
-        .flags(Pistache::Tcp::Options::ReuseAddr)
-        .maxPayload( 1e9 );
+}
 
-      for ( auto & handler : routes_ ) {
+class StatsEndpoint {
+public:
+    StatsEndpoint(Address addr)
+        : httpEndpoint(std::make_shared<Http::Endpoint>(addr))
+    { }
 
-        std::string p;
-        Pistache::Http::Method m;
-        Pistache::Rest::Route::Handler h;
-
-        p = handler.first;
-        std::tie(m, h) = handler.second;
-
-        router_.addRoute(m,p,h);
-
-      }
-
-      endpoint_.setHandler(router_.handler());
-      endpoint_.init(opts);
-
+    void init(size_t thr = 2) {
+        auto opts = Http::Endpoint::options()
+            .threads(thr)
+            .flags(Tcp::Options::InstallSignalHandler);
+        httpEndpoint->init(opts);
+        setupRoutes();
     }
 
-    RestApplication (): RestApplication( Pistache::Address(Pistache::Ipv4::any(), Pistache::Port(8080)) ) {}
-    
-    void listen() {
-      endpoint_.serve();
+    void start() {
+        httpEndpoint->setHandler(router.handler());
+        httpEndpoint->serve();
     }
 
     void shutdown() {
-      endpoint_.shutdown();
+        httpEndpoint->shutdown();
     }
 
-    protected:
-    private:
+private:
+    void setupRoutes() {
+        using namespace Rest;
 
-    Pistache::Address addr_;
-    Pistache::Http::Endpoint endpoint_;
-    Pistache::Rest::Router router_;
+        Routes::Post(router, "/insertorder", Routes::bind(&StatsEndpoint::doInsertOrder, this));
+        Routes::Post(router, "/cancelorder", Routes::bind(&StatsEndpoint::doCancelOrder, this));
+        Routes::Get(router, "/ready", Routes::bind(&Generic::handleReady));
+        Routes::Get(router, "/auth", Routes::bind(&StatsEndpoint::doAuth, this));
 
-    std::unordered_map < std::string, std::tuple< Pistache::Http::Method, Pistache::Rest::Route::Handler > > routes_ = {
-      
-      {
-        "/",
-        std::tuple<Pistache::Http::Method, Pistache::Rest::Route::Handler>(
-          Pistache::Http::Method::Get,
-          
-          [this](const Pistache::Http::Request & req, Pistache::Http::ResponseWriter res) -> Pistache::Rest::Route::Result
-          {
-            std::cout << __PRETTY_FUNCTION__ << std::endl;
-            res.send(Pistache::Http::Code::Ok);
-          }
+    }
 
-        )
-      },
+    void doInsertOrder(const Rest::Request& request, Http::ResponseWriter response) {
+        auto order = request.body();
 
-      {
-        "/insertorder",
-        std::tuple<Pistache::Http::Method, Pistache::Rest::Route::Handler>
-        (
-          Pistache::Http::Method::Post,
-          [this](const Pistache::Http::Request & req, Pistache::Http::ResponseWriter res) -> Pistache::Rest::Route::Result
-          {
-            std::cout << __PRETTY_FUNCTION__ << std::endl;
-            auto reqBody = req.body();
-            res.send(Pistache::Http::Code::Ok, reqBody);
-          }
-        )
-      }
-    };
-  };
+        Guard guard(OrderLock);
+		response.send(Http::Code::Created, order);
+    }
+    
+	void doCancelOrder(const Rest::Request& request, Http::ResponseWriter response) {
+        auto order = request.body();
 
-}
+        Guard guard(OrderLock);
+		response.send(Http::Code::Created, order);
+    }
 
-using namespace Application;
+    void doAuth(const Rest::Request& request, Http::ResponseWriter response) {
+        printCookies(request);
+        response.cookies()
+            .add(Http::Cookie("lang", "en-US"));
+        response.send(Http::Code::Ok);
+    }
 
-void signalHandler(int signal);
+    typedef std::mutex Lock;
+    typedef std::lock_guard<Lock> Guard;
+    Lock OrderLock;
 
-static Pistache::Address addr(Pistache::Ipv4::any(), Pistache::Port(8080));
-static auto app = Application::RestApplication(addr);
+    std::shared_ptr<Http::Endpoint> httpEndpoint;
+    Rest::Router router;
+};
 
-int main(int argc, char ** argv) {
+int main(int argc, char *argv[]) {
+    Port port(8080);
 
-    std::vector<std::string> arguments(argv + 1, argv + argc);
-    signal(SIGINT, signalHandler);
-    signal(SIGKILL, signalHandler);
-    signal(SIGTERM, signalHandler);
-    app.listen();
-    return 0;
-}
+    int thr = 2;
 
-void signalHandler(int signal) {
-  std::cout << __PRETTY_FUNCTION__ << std::endl;
-  app.shutdown();
-  exit(signal);
+    if (argc >= 2) {
+        port = std::stol(argv[1]);
+
+        if (argc == 3)
+            thr = std::stol(argv[2]);
+    }
+
+    Address addr(Ipv4::any(), port);
+
+    cout << "Cores = " << hardware_concurrency() << endl;
+    cout << "Using " << thr << " threads" << endl;
+
+    StatsEndpoint stats(addr);
+
+    stats.init(thr);
+    stats.start();
+
+    stats.shutdown();
 }
