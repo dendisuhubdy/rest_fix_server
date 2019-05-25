@@ -1,17 +1,12 @@
 [submodule "third-party/googletest"]
 	path = third-party/googletest
 	url = git@github.com:google/googletest.git
-	branch = release-1.8.1
-
-[submodule "third-party/crow"]
-	path = third-party/crow
-	url = git@github.com:ipkn/crow.git
-	branch = v0.1
-
 [submodule "third-party/pistache"]
 	path = third-party/pistache
 	url = git@github.com:oktal/pistache.git
-
+[submodule "third-party/simdjson"]
+	path = third-party/simdjson
+	url = git@github.com:lemire/simdjson.git
 [submodule "third-party/json"]
 	path = third-party/json
 	url = git@github.com:nlohmann/json.git
