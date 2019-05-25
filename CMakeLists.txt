@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project( ocv_microservice_crow )
+project( rest_api_server )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra -Wno-missing-field-initializers")
@@ -36,36 +36,34 @@ endif()
 
 INCLUDE(Dart)
 
-find_package( OpenCV 4.0.0 REQUIRED )
 include_directories( ${PROJECT_SOURCE_DIR}/include )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-file(GLOB ocv_microservice_crow_SOURCES
+file(GLOB rest_api_server_SOURCES
     "${PROJECT_SOURCE_DIR}/src/*.cpp"
 )
 
-add_executable( ocv_microservice_crow ${ocv_microservice_crow_SOURCES} )
+add_executable( rest_api_server ${rest_api_server_SOURCES} )
 
-ADD_SUBDIRECTORY(third-party/pistache)
 include_directories( third-party/pistache/include )
 
 
 find_package(Boost COMPONENTS system REQUIRED)
 
 if (Boost_FOUND)
-    include_directories(${Boost_INCLUDEDIR})
+    include_directories(${Boost_INCLUDE_DIR})
 
     set(Boost_USE_STATIC_LIBS        ON)
     set(Boost_USE_MULTITHREADED      ON)
     set(Boost_USE_STATIC_RUNTIME    OFF)
 
-    target_link_libraries(ocv_microservice_crow ${Boost_SYSTEM_LIBRARIES})
+    target_link_libraries(rest_api_server ${Boost_SYSTEM_LIBRARIES})
 
 else(Boost_FOUND)
     message(FATAL_ERROR "Boost not found. Could not build this app.")
 endif(Boost_FOUND)
 
-target_link_libraries( ocv_microservice_crow ${OpenCV_LIBS} pthread pistache )
+target_link_libraries( rest_api_server pthread pistache )
 
 if (BUILD_TESTS)
     find_package(GTest)

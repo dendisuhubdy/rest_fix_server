@@ -1,7 +1,3 @@
-#include <base64.hpp>
-#include <filter.hpp>
-#include <main.hpp>
-
 #include <pistache/endpoint.h>
 #include <pistache/router.h>
 
@@ -11,7 +7,6 @@
 using namespace Pistache;
 using namespace Pistache::Http;
 using namespace Pistache::Rest;
-using namespace Core;
 
 namespace Application {
 
