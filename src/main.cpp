@@ -163,6 +163,13 @@ private:
 
         new_order.push_back_trailer(); // write CheckSum.
         
+        // Create the config
+        Configuration config = {
+            { "metadata.broker.list", "127.0.0.1:9092" }
+        };
+        // Create the producer
+        Producer producer(config);
+        
         std::string message(buffer);
         producer.produce(MessageBuilder("fix_message_queue").partition(0).payload(message));
         producer.flush();
@@ -243,6 +250,12 @@ private:
         new_order.push_back_char      (hffix::tag::TimeInForce, '1');
 
         new_order.push_back_trailer(); // write CheckSum.
+        // Create the config
+        Configuration config = {
+            { "metadata.broker.list", "127.0.0.1:9092" }
+        };
+        // Create the producer
+        Producer producer(config);
         
         std::string message(buffer);
         producer.produce(MessageBuilder("fix_message_queue").partition(0).payload(message));
@@ -266,12 +279,6 @@ private:
 
     std::shared_ptr<Http::Endpoint> httpEndpoint;
     Rest::Router router;
-    // Create the config
-    Configuration config = {
-        { "metadata.broker.list", "127.0.0.1:9092" }
-    };
-    // Create the producer
-    Producer producer(config);
 };
 
 int main(int argc, char *argv[]) {

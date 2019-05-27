@@ -50,7 +50,8 @@ matrix:
 
 
 before_install:
-  - sudo apt install libboost-all-dev librdkafka-dev libzstd-dev libsasl2-dev libssl-dev zlib1g-dev
+  - sudo apt-get update 
+  - sudo apt-get install libboost-all-dev
 
 # Build steps
 script:
