@@ -47,6 +47,7 @@ add_executable( rest_api_server ${rest_api_server_SOURCES} )
 
 include_directories( third-party/pistache/include )
 
+find_package(nlohmann_json 3.2.0 REQUIRED)
 
 find_package(Boost COMPONENTS system REQUIRED)
 
@@ -63,7 +64,7 @@ else(Boost_FOUND)
     message(FATAL_ERROR "Boost not found. Could not build this app.")
 endif(Boost_FOUND)
 
-target_link_libraries( rest_api_server pthread pistache )
+target_link_libraries( rest_api_server nlohmann_json::nlohmann_json rdkafka cppkafka pthread pistache )
 
 if (BUILD_TESTS)
     find_package(GTest)
