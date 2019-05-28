@@ -354,10 +354,10 @@ inline bool atotime(
 \tparam Duration a std::chrono::duration type used to measure the time since epoch
 */
 template<typename T>
-struct is_time_point : std::false_type {}; 
+struct is_time_point : std::false_type {};
 
 template<typename Clock, typename Duration>
-struct is_time_point<std::chrono::time_point<Clock, Duration>> : std::true_type {}; 
+struct is_time_point<std::chrono::time_point<Clock, Duration>> : std::true_type {};
 
 /*
 \brief Internal ascii-to-timepoint conversion.

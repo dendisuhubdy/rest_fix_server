@@ -60,13 +60,13 @@ namespace Generic {
 class StatsEndpoint {
 public:
     StatsEndpoint(Address addr)
-        : httpEndpoint(std::make_shared<Http::Endpoint>(addr))
+    : httpEndpoint(std::make_shared<Http::Endpoint>(addr))
     { }
 
     void init(size_t thr = 2) {
         auto opts = Http::Endpoint::options()
-            .threads(thr)
-            .flags(Tcp::Options::InstallSignalHandler);
+        .threads(thr)
+        .flags(Tcp::Options::InstallSignalHandler);
         httpEndpoint->init(opts);
         setupRoutes();
     }
@@ -94,7 +94,7 @@ private:
     void doInsertOrder(const Rest::Request& request, Http::ResponseWriter response) {
         auto order = request.body();
         Guard guard(OrderLock);
-        
+
         std::string order_json_data = order.c_str();
         auto json_parsed_data = json::parse(order_json_data);
         std::cout << json_parsed_data.dump(4) << std::endl;
@@ -103,7 +103,7 @@ private:
         int price = json_parsed_data.at("price");
 
         char buffer[1 << 13];
-        
+
         // build fix message
         int seq_send(1);
 
@@ -162,27 +162,27 @@ private:
         new_order.push_back_char      (hffix::tag::TimeInForce, '1');
 
         new_order.push_back_trailer(); // write CheckSum.
-        
+
         // Create the config
         Configuration config = {
             { "metadata.broker.list", "127.0.0.1:9092" }
         };
         // Create the producer
         Producer producer(config);
-        
+
         std::string message(buffer);
         producer.produce(MessageBuilder("fix_message_queue").partition(0).payload(message));
         producer.flush();
-            
+
         std::cout << buffer << std::endl;
 
-		response.send(Http::Code::Created, order);
+        response.send(Http::Code::Created, order);
     }
-    
-	void doCancelOrder(const Rest::Request& request, Http::ResponseWriter response) {
+
+    void doCancelOrder(const Rest::Request& request, Http::ResponseWriter response) {
         auto order = request.body();
         Guard guard(OrderLock);
-        
+
         std::string order_json_data = order.c_str();
         auto json_parsed_data = json::parse(order_json_data);
         std::cout << json_parsed_data.dump(4) << std::endl;
@@ -256,20 +256,20 @@ private:
         };
         // Create the producer
         Producer producer(config);
-        
+
         std::string message(buffer);
         producer.produce(MessageBuilder("fix_message_queue").partition(0).payload(message));
         producer.flush();
-            
+
         std::cout << buffer << std::endl;
 
-		response.send(Http::Code::Created, order);
+        response.send(Http::Code::Created, order);
     }
 
     void doAuth(const Rest::Request& request, Http::ResponseWriter response) {
         printCookies(request);
         response.cookies()
-            .add(Http::Cookie("lang", "en-US"));
+        .add(Http::Cookie("lang", "en-US"));
         response.send(Http::Code::Ok);
     }
 
